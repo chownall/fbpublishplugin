@@ -1,0 +1,71 @@
+{
+  "workbench.colorCustomizations": {
+    // === PANEL PRINCIPAL (BOTTOM) ===
+    "panel.background": "#17120c",
+    "panel.border": "#a4752b",
+    "panel.dropBorder": "#d9a441",
+    "panelTitle.activeBorder": "#c28f2c",
+    "panelTitle.activeForeground": "#f4d58d",
+    "panelTitle.inactiveForeground": "#8c7a5b",
+    "panelSection.border": "#3a2c1c",
+    "panelSectionHeader.background": "#2a2016",
+    "panelSectionHeader.foreground": "#f1e0bf",
+    "panelInput.border": "#c28f2c",
+    
+    // === SIDEBAR (EXPLORER, SEARCH, etc) ===
+    "sideBar.background": "#1a140d",
+    "sideBar.foreground": "#f1e0bf",
+    "sideBar.border": "#a4752b",
+    "sideBarTitle.foreground": "#f4d58d",
+    "sideBarSectionHeader.background": "#2a2016",
+    "sideBarSectionHeader.foreground": "#f1e0bf",
+    "sideBarSectionHeader.border": "#a4752b",
+    
+    // === ACTIVITY BAR (ICONES GAUCHE) ===
+    "activityBar.background": "#22190f",
+    "activityBar.foreground": "#f4d58d",
+    "activityBar.border": "#a4752b",
+    "activityBar.activeBorder": "#d9a441",
+    "activityBarBadge.background": "#c28f2c",
+    "activityBarBadge.foreground": "#1a140d",
+    
+    // === STATUS BAR (BARRE DU BAS) ===
+    "statusBar.background": "#2a2016",
+    "statusBar.foreground": "#f1e0bf",
+    "statusBar.border": "#a4752b",
+    "statusBar.debuggingBackground": "#6b4f1d",
+    "statusBar.noFolderBackground": "#22190f",
+    "statusBarItem.prominentBackground": "#c28f2c",
+    
+    // === TITLE BAR (BARRE DU HAUT) ===
+    "titleBar.activeBackground": "#2a2016",
+    "titleBar.activeForeground": "#f1e0bf",
+    "titleBar.inactiveBackground": "#1a140d",
+    "titleBar.inactiveForeground": "#8c7a5b",
+    "titleBar.border": "#a4752b",
+    
+    // === TERMINAL ===
+    "terminal.background": "#1b1510",
+    "terminal.foreground": "#f1e0bf",
+    "terminal.border": "#2a2016",
+    "terminal.ansiCyan": "#d9a441",
+    "terminal.ansiBrightCyan": "#f4d58d",
+    "terminal.ansiGreen": "#9fbf6b",
+    "terminal.ansiBrightGreen": "#b7d27f",
+    "terminalCursor.background": "#1b1510",
+    "terminalCursor.foreground": "#f4d58d",
+    
+    // === TABS ===
+    "tab.activeBackground": "#1b1510",
+    "tab.activeForeground": "#f4d58d",
+    "tab.activeBorder": "#c28f2c",
+    "tab.inactiveBackground": "#22190f",
+    "tab.inactiveForeground": "#8c7a5b",
+    "tab.border": "#2a2016",
+    
+    // === EDITOR ===
+    "editor.background": "#18120c",
+    "editorGroupHeader.tabsBackground": "#22190f",
+    "editorGroupHeader.border": "#a4752b"
+  }
+}

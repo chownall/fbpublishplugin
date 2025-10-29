@@ -1,0 +1,28 @@
+=== FB Publish Plugin ===
+Contributors: your-name
+Requires at least: 5.8
+Tested up to: 6.6
+Requires PHP: 7.4
+Stable tag: 1.0.0
+License: GPLv2 or later
+
+Publie automatiquement le lien de l’article sur une Page et un Groupe Facebook quand un article passe de brouillon à publié (y compris planification). Inclut une méta box permettant de publier manuellement avec un message personnalisé.
+
+== Installation ==
+1. Uploadez le dossier du plugin dans `wp-content/plugins`.
+2. Activez le plugin depuis l’admin WordPress.
+3. Rendez-vous dans `Réglages > Publication Facebook` pour renseigner le jeton, l’ID de page, l’ID de groupe et le message par défaut.
+
+== Utilisation ==
+- Dans l’éditeur d’article, utilisez la méta box "Publication Facebook" pour cocher Page/Groupe, écrire un message personnalisé et déclencher une publication manuelle.
+- Lors de la publication (ou publication planifiée), le lien est posté automatiquement selon les coches par défaut.
+
+== Permissions Facebook requises ==
+- Pour poster sur une Page: `pages_manage_posts`, `pages_read_engagement` et un jeton de Page.
+- Pour poster dans un Groupe: `publish_to_groups` et être admin/modérateur du groupe. Les apps non approuvées ne peuvent publier que pour des comptes développeurs/testeurs.
+
+== Notes ==
+- Utilise `wp_remote_post` vers l’API Graph v20.0 (`/{page_id}/feed` et `/{group_id}/feed`).
+- Déduplication simple via metas de post: évite la double publication.
+
+
