@@ -15,6 +15,7 @@ class FB_Publish_Plugin {
     const OPTION_KEY = 'fbpublishplugin_options';
     const NONCE_META_BOX = 'fbpublish_meta_box_nonce';
     const AJAX_ACTION = 'fbpublish_manual_share';
+    const CRON_HOOK = 'fbpublish_deferred_share';
 
     public function __construct() {
         add_action('admin_init', [$this, 'register_settings']);
@@ -33,6 +34,10 @@ class FB_Publish_Plugin {
 
         // Admin assets
         add_action('admin_enqueue_scripts', [$this, 'enqueue_admin_assets']);
+
+        // Deferred share handler (for scheduled/immediate slight delay)
+        // Accept 4 args now (post_id, destinations, message_override, force)
+        add_action(self::CRON_HOOK, [$this, 'handle_deferred_share'], 10, 4);
     }
 
     public static function get_options() {
@@ -41,6 +46,8 @@ class FB_Publish_Plugin {
             'page_access_token' => '',
             'page_id' => '',
             'default_message' => 'Nouvel article: {title}',
+            'share_format' => 'link', // link | photo
+            'force_on_scheduled' => '0',
         ];
         $options = get_option(self::OPTION_KEY, []);
         if (!is_array($options)) {
@@ -58,6 +65,9 @@ class FB_Publish_Plugin {
                 $sanitized['page_access_token'] = isset($input['page_access_token']) ? sanitize_text_field($input['page_access_token']) : '';
                 $sanitized['page_id'] = isset($input['page_id']) ? sanitize_text_field($input['page_id']) : '';
                 $sanitized['default_message'] = isset($input['default_message']) ? wp_kses_post($input['default_message']) : '';
+                $sf = isset($input['share_format']) ? sanitize_text_field($input['share_format']) : 'link';
+                $sanitized['share_format'] = in_array($sf, ['link','photo'], true) ? $sf : 'link';
+                $sanitized['force_on_scheduled'] = isset($input['force_on_scheduled']) && $input['force_on_scheduled'] === '1' ? '1' : '0';
                 return $sanitized;
             },
             'default' => self::get_options(),
@@ -88,6 +98,19 @@ class FB_Publish_Plugin {
             $options = self::get_options();
             echo '<textarea class="large-text" rows="3" name="' . esc_attr(self::OPTION_KEY) . '[default_message]">' . esc_textarea($options['default_message']) . '</textarea>';
             echo '<p class="description">' . esc_html__('Placeholders disponibles: {title} {link}', 'fbpublishplugin') . '</p>';
+        }, self::OPTION_KEY, 'fbpublish_main');
+
+        add_settings_field('share_format', __('Format de partage', 'fbpublishplugin'), function () {
+            $options = self::get_options();
+            $val = isset($options['share_format']) ? $options['share_format'] : 'link';
+            echo '<label><input type="radio" name="' . esc_attr(self::OPTION_KEY) . '[share_format]" value="link" ' . checked('link', $val, false) . ' /> ' . esc_html__('Aperçu de lien (par défaut)', 'fbpublishplugin') . '</label><br/>';
+            echo '<label><input type="radio" name="' . esc_attr(self::OPTION_KEY) . '[share_format]" value="photo" ' . checked('photo', $val, false) . ' /> ' . esc_html__('Photo + lien dans le message (grand visuel)', 'fbpublishplugin') . '</label>';
+        }, self::OPTION_KEY, 'fbpublish_main');
+
+        add_settings_field('force_on_scheduled', __('Forcer si publication planifiée', 'fbpublishplugin'), function () {
+            $options = self::get_options();
+            $val = isset($options['force_on_scheduled']) ? $options['force_on_scheduled'] : '0';
+            echo '<label><input type="checkbox" name="' . esc_attr(self::OPTION_KEY) . '[force_on_scheduled]" value="1" ' . checked('1', $val, false) . ' /> ' . esc_html__('Ignorer la déduplication si l’article était déjà partagé avant sa mise en ligne planifiée.', 'fbpublishplugin') . '</label>';
         }, self::OPTION_KEY, 'fbpublish_main');
     }
 
@@ -133,6 +156,8 @@ class FB_Publish_Plugin {
 
         $post_to_page = get_post_meta($post->ID, '_fbpublish_post_to_page', true);
         $custom_message = get_post_meta($post->ID, '_fbpublish_custom_message', true);
+        $share_as_photo = get_post_meta($post->ID, '_fbpublish_share_as_photo', true);
+        $global_default_photo = (isset($options['share_format']) && $options['share_format'] === 'photo');
 
         if ($post_to_page === '') {
             $post_to_page = $has_page ? '1' : '0';
@@ -145,9 +170,17 @@ class FB_Publish_Plugin {
 
         echo '<p><textarea name="fbpublish_custom_message" rows="3" class="widefat" placeholder="' . esc_attr__('Message personnalisé (optionnel)', 'fbpublishplugin') . '">' . esc_textarea($custom_message) . '</textarea></p>';
 
+        $thumb_url = get_the_post_thumbnail_url($post->ID, 'full');
+        $checked_photo = ($share_as_photo === '1') || ($share_as_photo === '' && $global_default_photo);
+        echo '<p><label><input type="checkbox" id="fbpublish_share_as_photo" name="fbpublish_share_as_photo" value="1" ' . checked(true, $checked_photo, false) . ' /> ' . esc_html__('Partager en photo (grand visuel)', 'fbpublishplugin') . '</label></p>';
+        if (empty($thumb_url)) {
+            echo '<p class="description">' . esc_html__('Astuce: ajoutez une image mise en avant pour un grand visuel.', 'fbpublishplugin') . '</p>';
+        }
+
         $is_published = $post->post_status === 'publish';
         $button_disabled = $is_published ? '' : 'disabled';
         echo '<p><button type="button" class="button button-primary" id="fbpublish_manual_btn" ' . $button_disabled . '>' . esc_html__('Publier maintenant sur Facebook', 'fbpublishplugin') . '</button></p>';
+        echo '<p><label><input type="checkbox" id="fbpublish_force" /> ' . esc_html__('Forcer la republication (ignorer la déduplication)', 'fbpublishplugin') . '</label></p>';
         if (!$is_published) {
             echo '<p class="description">' . esc_html__('Le bouton est actif lorsque l’article est publié.', 'fbpublishplugin') . '</p>';
         }
@@ -183,11 +216,13 @@ class FB_Publish_Plugin {
 
         $post_to_page = isset($_POST['fbpublish_post_to_page']) ? '1' : '0';
         $custom_message = isset($_POST['fbpublish_custom_message']) ? wp_kses_post($_POST['fbpublish_custom_message']) : '';
+        $share_as_photo = isset($_POST['fbpublish_share_as_photo']) ? '1' : '0';
 
         update_post_meta($post_id, '_fbpublish_post_to_page', $post_to_page);
         update_post_meta($post_id, '_fbpublish_custom_message', $custom_message);
         // Cleanup legacy group metas
         delete_post_meta($post_id, '_fbpublish_post_to_group');
+        update_post_meta($post_id, '_fbpublish_share_as_photo', $share_as_photo);
     }
 
     public function enqueue_admin_assets($hook) {
@@ -224,17 +259,17 @@ class FB_Publish_Plugin {
         }
 
         $to_page = isset($_POST['toPage']) && $_POST['toPage'] === '1';
-        $to_group = isset($_POST['toGroup']) && $_POST['toGroup'] === '1';
+        $force = isset($_POST['force']) && $_POST['force'] === '1';
+        $as_photo = isset($_POST['shareAsPhoto']) && $_POST['shareAsPhoto'] === '1';
         $message = isset($_POST['message']) ? wp_kses_post(wp_unslash($_POST['message'])) : '';
 
         $destinations = [];
         if ($to_page) { $destinations[] = 'page'; }
-        if ($to_group) { $destinations[] = 'group'; }
         if (empty($destinations)) {
             wp_send_json_error(['message' => __('Aucune destination sélectionnée', 'fbpublishplugin')], 400);
         }
 
-        $result = $this->share_to_facebook($post_id, $destinations, $message);
+        $result = $this->share_to_facebook($post_id, $destinations, $message, $force, $as_photo);
         if ($result['success']) {
             wp_send_json_success(['message' => __('Publication réussie', 'fbpublishplugin'), 'details' => $result['details']]);
         }
@@ -259,21 +294,53 @@ class FB_Publish_Plugin {
         if (empty($destinations)) {
             return;
         }
-        $this->share_to_facebook($post_id, $destinations, $custom_message);
+        // Mark as published to prevent reposting on updates
+        update_post_meta($post_id, '_fbpublish_was_published', '1');
+        // Delay share to allow OG cache and CDN to settle, especially for scheduled posts
+        $delay = ($old_status === 'future') ? 20 : 3; // seconds
+        $options = self::get_options();
+        $force = ($old_status === 'future' && isset($options['force_on_scheduled']) && $options['force_on_scheduled'] === '1');
+
+        // If running under server cron or wp-cron is disabled, execute inline with a short sleep
+        if ((defined('DOING_CRON') && DOING_CRON) || (defined('DISABLE_WP_CRON') && DISABLE_WP_CRON)) {
+            if ($delay > 0) {
+                // sleep is acceptable in cron context; avoids relying on another cron tick
+                sleep($delay);
+            }
+            $this->share_to_facebook($post_id, $destinations, $custom_message, $force);
+            return;
+        }
+
+        if (!wp_next_scheduled(self::CRON_HOOK, [$post_id, $destinations, $custom_message, $force])) {
+            wp_schedule_single_event(time() + $delay, self::CRON_HOOK, [$post_id, $destinations, $custom_message, $force]);
+            // Proactively trigger WP-Cron to ensure the event runs on low-traffic sites
+            $cron_url = site_url('wp-cron.php');
+            if ($cron_url) {
+                wp_remote_post($cron_url, [ 'timeout' => 0.01, 'blocking' => false ]);
+            }
+        }
     }
 
     public function auto_share_simple($post_id, $post) {
         if (get_post_type($post_id) !== 'post') {
             return;
         }
-        // This is a fallback; main handler uses transition_post_status. Avoid double-post using flags.
+        // This is a fallback; main handler uses transition_post_status.
+        // Check if post was already published to avoid reposting on updates
+        $was_already_published = get_post_meta($post_id, '_fbpublish_was_published', true) === '1';
+        if ($was_already_published) {
+            return; // Don't repost on updates
+        }
+        // Mark as published for future updates
+        update_post_meta($post_id, '_fbpublish_was_published', '1');
         $this->maybe_auto_share_on_publish('publish', 'draft', get_post($post_id));
     }
 
     private function replace_placeholders($message, $post_id) {
         $post = get_post($post_id);
+        $title = $this->normalize_text(get_the_title($post_id));
         $replacements = [
-            '{title}' => get_the_title($post_id),
+            '{title}' => $title,
             '{link}' => get_permalink($post_id),
         ];
         return strtr($message, $replacements);
@@ -282,7 +349,37 @@ class FB_Publish_Plugin {
     private function build_message($post_id, $message_override = '') {
         $options = self::get_options();
         $message = trim($message_override) !== '' ? $message_override : $options['default_message'];
-        return $this->replace_placeholders($message, $post_id);
+        $message = $this->replace_placeholders($message, $post_id);
+        return $this->normalize_text($message);
+    }
+
+    private function normalize_text($text) {
+        // Decode special chars and named HTML entities
+        if (function_exists('wp_specialchars_decode')) {
+            $text = wp_specialchars_decode($text, ENT_QUOTES);
+        }
+        $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        // Normalize curly quotes/apostrophes and non-breaking spaces
+        $search = [
+            "\xE2\x80\x98", // ‘
+            "\xE2\x80\x99", // ’
+            "\xE2\x80\x9C", // “
+            "\xE2\x80\x9D", // ”
+            "\xC2\xA0",     // NBSP
+        ];
+        $replace = ["'", "'", '"', '"', ' '];
+        $text = str_replace($search, $replace, $text);
+        // Collapse whitespace and trim
+        $text = preg_replace('/\s+/u', ' ', $text);
+        return trim($text);
+    }
+
+    public function handle_deferred_share($post_id, $destinations, $message_override, $force = false) {
+        $status = get_post_status($post_id);
+        if ($status !== 'publish') {
+            return;
+        }
+        $this->share_to_facebook($post_id, (array) $destinations, (string) $message_override, (bool) $force);
     }
 
     private function has_already_shared($post_id, $dest) {
@@ -321,7 +418,7 @@ class FB_Publish_Plugin {
         return ['ok' => false, 'error' => $error_message, 'status' => $code, 'body' => $body];
     }
 
-    private function share_to_destination($post_id, $dest, $message) {
+    private function share_to_destination($post_id, $dest, $message, $as_photo_override = null) {
         $options = self::get_options();
         $access_token = !empty($options['page_access_token']) ? $options['page_access_token'] : $options['access_token'];
         if (empty($access_token)) {
@@ -332,6 +429,38 @@ class FB_Publish_Plugin {
         if (empty($page_id)) {
             return ['ok' => false, 'error' => __('ID de Page manquant', 'fbpublishplugin')];
         }
+        // Determine share format (link vs photo)
+        $share_as_photo = false;
+        if (is_bool($as_photo_override)) {
+            $share_as_photo = $as_photo_override;
+        } else {
+            $meta_flag = get_post_meta($post_id, '_fbpublish_share_as_photo', true);
+            if ($meta_flag === '1') {
+                $share_as_photo = true;
+            } else {
+                $share_as_photo = (isset($options['share_format']) && $options['share_format'] === 'photo');
+            }
+        }
+
+        if ($share_as_photo) {
+            $image_url = get_the_post_thumbnail_url($post_id, 'full');
+            if (!$image_url) {
+                $image_url = $this->discover_og_image($link);
+            }
+            if ($image_url) {
+                $caption = trim($message . "\n\n" . $link);
+                $params = [
+                    'url' => $image_url,
+                    'message' => $caption,
+                    'access_token' => $access_token,
+                ];
+                return $this->http_post_graph($page_id . '/photos', $params);
+            }
+            // Fallback to link if no image
+        }
+
+        // Link share path
+        $this->prewarm_facebook_scrape($link, $access_token);
         $params = [
             'message' => $message,
             'link' => $link,
@@ -340,19 +469,53 @@ class FB_Publish_Plugin {
         return $this->http_post_graph($page_id . '/feed', $params);
     }
 
-    public function share_to_facebook($post_id, $destinations, $message_override = '') {
+    private function prewarm_facebook_scrape($url, $access_token) {
+        if (empty($url) || empty($access_token)) {
+            return;
+        }
+        $endpoint = '/';
+        $params = [
+            'id' => $url,
+            'scrape' => 'true',
+            'access_token' => $access_token,
+        ];
+        // Fire-and-forget; ignore result
+        $this->http_post_graph($endpoint, $params);
+    }
+
+    private function discover_og_image($url) {
+        $response = wp_remote_get($url, [ 'timeout' => 10 ]);
+        if (is_wp_error($response)) {
+            return '';
+        }
+        $body = wp_remote_retrieve_body($response);
+        if (!$body) {
+            return '';
+        }
+        // Simple OG image extraction
+        if (preg_match('/<meta[^>]+property=["\']og:image["\'][^>]+content=["\']([^"\']+)["\']/i', $body, $m)) {
+            return esc_url_raw(html_entity_decode($m[1], ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+        }
+        return '';
+    }
+
+    public function share_to_facebook($post_id, $destinations, $message_override = '', $force = false, $as_photo_override = null) {
         $details = [];
         $message = $this->build_message($post_id, $message_override);
 
         foreach ($destinations as $dest) {
-            if ($this->has_already_shared($post_id, $dest)) {
+            if (!$force && $this->has_already_shared($post_id, $dest)) {
                 $details[$dest] = ['ok' => true, 'skipped' => true, 'reason' => 'already_shared'];
                 continue;
             }
-            $resp = $this->share_to_destination($post_id, $dest, $message);
+            $resp = $this->share_to_destination($post_id, $dest, $message, $as_photo_override);
             if ($resp['ok']) {
                 $this->mark_shared($post_id, $dest, $resp['body']);
-                $details[$dest] = ['ok' => true, 'id' => isset($resp['body']['id']) ? $resp['body']['id'] : null];
+                $details[$dest] = [
+                    'ok' => true,
+                    'id' => isset($resp['body']['id']) ? $resp['body']['id'] : null,
+                    'mode' => ($as_photo_override || get_post_meta($post_id, '_fbpublish_share_as_photo', true) === '1' || (isset(self::get_options()['share_format']) && self::get_options()['share_format'] === 'photo')) ? 'photo' : 'link'
+                ];
             } else {
                 $details[$dest] = ['ok' => false, 'error' => $resp['error'], 'status' => $resp['status']];
                 update_post_meta($post_id, '_fbpublish_last_error', wp_json_encode($resp));

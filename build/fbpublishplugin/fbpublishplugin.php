@@ -294,6 +294,8 @@ class FB_Publish_Plugin {
         if (empty($destinations)) {
             return;
         }
+        // Mark as published to prevent reposting on updates
+        update_post_meta($post_id, '_fbpublish_was_published', '1');
         // Delay share to allow OG cache and CDN to settle, especially for scheduled posts
         $delay = ($old_status === 'future') ? 20 : 3; // seconds
         $options = self::get_options();
@@ -323,7 +325,14 @@ class FB_Publish_Plugin {
         if (get_post_type($post_id) !== 'post') {
             return;
         }
-        // This is a fallback; main handler uses transition_post_status. Avoid double-post using flags.
+        // This is a fallback; main handler uses transition_post_status.
+        // Check if post was already published to avoid reposting on updates
+        $was_already_published = get_post_meta($post_id, '_fbpublish_was_published', true) === '1';
+        if ($was_already_published) {
+            return; // Don't repost on updates
+        }
+        // Mark as published for future updates
+        update_post_meta($post_id, '_fbpublish_was_published', '1');
         $this->maybe_auto_share_on_publish('publish', 'draft', get_post($post_id));
     }
 
