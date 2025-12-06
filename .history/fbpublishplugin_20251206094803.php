@@ -114,25 +114,25 @@ class FB_Publish_Plugin {
         add_settings_field('force_on_scheduled', __('Forcer si publication planifiée', 'fbpublishplugin'), function () {
             $options = self::get_options();
             $val = isset($options['force_on_scheduled']) ? $options['force_on_scheduled'] : '0';
-            echo '<label><input type="checkbox" name="' . esc_attr(self::OPTION_KEY) . '[force_on_scheduled]" value="1" ' . checked('1', $val, false) . ' /> ' . esc_html__("Ignorer la déduplication si l'article était déjà partagé avant sa mise en ligne planifiée.", 'fbpublishplugin') . '</label>';
+            echo '<label><input type="checkbox" name="' . esc_attr(self::OPTION_KEY) . '[force_on_scheduled]" value="1" ' . checked('1', $val, false) . ' /> ' . esc_html__('Ignorer la déduplication si l'article était déjà partagé avant sa mise en ligne planifiée.', 'fbpublishplugin') . '</label>';
         }, self::OPTION_KEY, 'fbpublish_main');
 
         // OpenAI settings section
         add_settings_section('fbpublish_openai', __('Génération de message IA', 'fbpublishplugin'), function () {
-            echo '<p>' . esc_html__("Configurez OpenAI pour générer automatiquement un message d'accroche percutant.", 'fbpublishplugin') . '</p>';
+            echo '<p>' . esc_html__('Configurez OpenAI pour générer automatiquement un message d'accroche percutant.', 'fbpublishplugin') . '</p>';
         }, self::OPTION_KEY);
 
         add_settings_field('openai_api_key', __('Clé API OpenAI', 'fbpublishplugin'), function () {
             $options = self::get_options();
             echo '<input type="password" class="regular-text" name="' . esc_attr(self::OPTION_KEY) . '[openai_api_key]" value="' . esc_attr($options['openai_api_key']) . '" placeholder="sk-..." />';
-            echo '<p class="description">' . esc_html__("Clé API OpenAI pour générer les messages d'accroche. Obtenez-la sur platform.openai.com.", 'fbpublishplugin') . '</p>';
+            echo '<p class="description">' . esc_html__('Clé API OpenAI pour générer les messages d'accroche. Obtenez-la sur platform.openai.com.', 'fbpublishplugin') . '</p>';
         }, self::OPTION_KEY, 'fbpublish_openai');
 
-        add_settings_field('enable_ai_hook', __("Activer l'accroche IA", 'fbpublishplugin'), function () {
+        add_settings_field('enable_ai_hook', __('Activer l'accroche IA', 'fbpublishplugin'), function () {
             $options = self::get_options();
             $val = isset($options['enable_ai_hook']) ? $options['enable_ai_hook'] : '0';
-            echo '<label><input type="checkbox" name="' . esc_attr(self::OPTION_KEY) . '[enable_ai_hook]" value="1" ' . checked('1', $val, false) . ' /> ' . esc_html__("Générer automatiquement un message d'accroche via IA avant le lien.", 'fbpublishplugin') . '</label>';
-            echo '<p class="description">' . esc_html__("L'IA génère un message percutant basé sur le titre et l'extrait de l'article.", 'fbpublishplugin') . '</p>';
+            echo '<label><input type="checkbox" name="' . esc_attr(self::OPTION_KEY) . '[enable_ai_hook]" value="1" ' . checked('1', $val, false) . ' /> ' . esc_html__('Générer automatiquement un message d'accroche via IA avant le lien.', 'fbpublishplugin') . '</label>';
+            echo '<p class="description">' . esc_html__('L'IA génère un message percutant basé sur le titre et l'extrait de l'article.', 'fbpublishplugin') . '</p>';
         }, self::OPTION_KEY, 'fbpublish_openai');
     }
 
@@ -192,16 +192,6 @@ class FB_Publish_Plugin {
 
         echo '<p><textarea name="fbpublish_custom_message" rows="3" class="widefat" placeholder="' . esc_attr__('Message personnalisé (optionnel)', 'fbpublishplugin') . '">' . esc_textarea($custom_message) . '</textarea></p>';
 
-        // AI hook option
-        $use_ai_hook = get_post_meta($post->ID, '_fbpublish_use_ai_hook', true);
-        $global_ai_enabled = (isset($options['enable_ai_hook']) && $options['enable_ai_hook'] === '1');
-        $has_openai_key = !empty($options['openai_api_key']);
-        $checked_ai = ($use_ai_hook === '1') || ($use_ai_hook === '' && $global_ai_enabled);
-        echo '<p><label><input type="checkbox" name="fbpublish_use_ai_hook" value="1" ' . checked(true, $checked_ai, false) . ' ' . disabled(!$has_openai_key, true, false) . ' /> ' . esc_html__('Générer accroche IA', 'fbpublishplugin') . '</label></p>';
-        if (!$has_openai_key) {
-            echo '<p class="description">' . esc_html__('Clé API OpenAI non configurée.', 'fbpublishplugin') . '</p>';
-        }
-
         $thumb_url = get_the_post_thumbnail_url($post->ID, 'full');
         $checked_photo = ($share_as_photo === '1') || ($share_as_photo === '' && $global_default_photo);
         echo '<p><label><input type="checkbox" id="fbpublish_share_as_photo" name="fbpublish_share_as_photo" value="1" ' . checked(true, $checked_photo, false) . ' /> ' . esc_html__('Partager en photo (grand visuel)', 'fbpublishplugin') . '</label></p>';
@@ -227,21 +217,6 @@ class FB_Publish_Plugin {
             echo '<pre style="white-space:pre-wrap">' . esc_html($pretty) . '</pre>';
             echo '</details>';
         }
-
-        // AI hook diagnostics
-        $ai_hook = get_post_meta($post->ID, '_fbpublish_ai_hook', true);
-        $ai_error = get_post_meta($post->ID, '_fbpublish_ai_error', true);
-        if (!empty($ai_hook)) {
-            echo '<details style="margin-top:8px"><summary>' . esc_html__('Dernière accroche IA générée', 'fbpublishplugin') . '</summary>';
-            echo '<pre style="white-space:pre-wrap">' . esc_html($ai_hook) . '</pre>';
-            echo '</details>';
-        }
-        if (!empty($ai_error)) {
-            echo '<details style="margin-top:8px"><summary style="color:#d63638">' . esc_html__('Erreur IA', 'fbpublishplugin') . '</summary>';
-            echo '<pre style="white-space:pre-wrap;color:#d63638">' . esc_html($ai_error) . '</pre>';
-            echo '</details>';
-        }
-
         if ($last_shared_ts > 0) {
             echo '<p class="description">' . sprintf(
                 esc_html__('Dernier partage: %s', 'fbpublishplugin'),
@@ -264,14 +239,12 @@ class FB_Publish_Plugin {
         $post_to_page = isset($_POST['fbpublish_post_to_page']) ? '1' : '0';
         $custom_message = isset($_POST['fbpublish_custom_message']) ? wp_kses_post($_POST['fbpublish_custom_message']) : '';
         $share_as_photo = isset($_POST['fbpublish_share_as_photo']) ? '1' : '0';
-        $use_ai_hook = isset($_POST['fbpublish_use_ai_hook']) ? '1' : '0';
 
         update_post_meta($post_id, '_fbpublish_post_to_page', $post_to_page);
         update_post_meta($post_id, '_fbpublish_custom_message', $custom_message);
         // Cleanup legacy group metas
         delete_post_meta($post_id, '_fbpublish_post_to_group');
         update_post_meta($post_id, '_fbpublish_share_as_photo', $share_as_photo);
-        update_post_meta($post_id, '_fbpublish_use_ai_hook', $use_ai_hook);
     }
 
     public function enqueue_admin_assets($hook) {
@@ -397,103 +370,9 @@ class FB_Publish_Plugin {
 
     private function build_message($post_id, $message_override = '') {
         $options = self::get_options();
-
-        // Check per-article AI hook setting (fallback to global)
-        $use_ai_hook = get_post_meta($post_id, '_fbpublish_use_ai_hook', true);
-        $global_ai_enabled = (isset($options['enable_ai_hook']) && $options['enable_ai_hook'] === '1');
-        $ai_enabled = ($use_ai_hook === '1') || ($use_ai_hook === '' && $global_ai_enabled);
-
-        // If AI hook is enabled and no custom message override, try to generate AI hook
-        if (trim($message_override) === '' && $ai_enabled) {
-            $ai_hook = $this->generate_ai_hook($post_id);
-            if (!empty($ai_hook)) {
-                return $this->normalize_text($ai_hook);
-            }
-        }
-
         $message = trim($message_override) !== '' ? $message_override : $options['default_message'];
         $message = $this->replace_placeholders($message, $post_id);
         return $this->normalize_text($message);
-    }
-
-    private function generate_ai_hook($post_id) {
-        $options = self::get_options();
-        $api_key = isset($options['openai_api_key']) ? $options['openai_api_key'] : '';
-
-        if (empty($api_key)) {
-            return '';
-        }
-
-        $post = get_post($post_id);
-        if (!$post) {
-            return '';
-        }
-
-        $title = $this->normalize_text(get_the_title($post_id));
-        $excerpt = get_the_excerpt($post_id);
-        if (empty($excerpt)) {
-            $excerpt = wp_trim_words(strip_tags($post->post_content), 55, '...');
-        }
-        $excerpt = $this->normalize_text($excerpt);
-
-        $prompt = "Tu es un expert en copywriting Facebook, spécialisé dans le domaine des sports canins. 
-Génère un message Facebook court, percutant et très cliquable pour annoncer un nouvel article.
-
-Contraintes :
-- Ton ton doit être humain, naturel, jamais générique.
-- Accroche obligatoire en 1 phrase : émotion, question forte ou erreur à éviter.
-- Utilise le contenu suivant :
-  - Titre de l'article : {$title}
-  - Extrait de l'article : {$excerpt}
-- Puis rédige 1 à 2 phrases maximum pour donner envie de cliquer.
-- Ne fais pas de résumé de l'article.
-- Ne révèle pas la réponse : crée de la curiosité.
-- Ne répète pas le titre.
-- Ne mets PAS le lien : le plugin l'ajoutera après.
-- Optimise pour un taux de clic maximum.
-
-Format final : 
-2 à 3 phrases courtes, dynamiques, sans hashtags, sans emojis, sans conclusion.
-
-Commence directement par l'accroche.";
-
-        $response = wp_remote_post('https://api.openai.com/v1/chat/completions', [
-            'timeout' => 30,
-            'headers' => [
-                'Authorization' => 'Bearer ' . $api_key,
-                'Content-Type' => 'application/json',
-            ],
-            'body' => wp_json_encode([
-                'model' => 'gpt-4o-mini',
-                'messages' => [
-                    ['role' => 'user', 'content' => $prompt]
-                ],
-                'max_tokens' => 200,
-                'temperature' => 0.8,
-            ]),
-        ]);
-
-        if (is_wp_error($response)) {
-            update_post_meta($post_id, '_fbpublish_ai_error', $response->get_error_message());
-            return '';
-        }
-
-        $code = wp_remote_retrieve_response_code($response);
-        $body_raw = wp_remote_retrieve_body($response);
-        $body = json_decode($body_raw, true);
-
-        if ($code !== 200 || empty($body['choices'][0]['message']['content'])) {
-            $error_msg = isset($body['error']['message']) ? $body['error']['message'] : 'HTTP ' . $code;
-            update_post_meta($post_id, '_fbpublish_ai_error', $error_msg);
-            return '';
-        }
-
-        $ai_message = trim($body['choices'][0]['message']['content']);
-        // Store the generated hook for debugging
-        update_post_meta($post_id, '_fbpublish_ai_hook', $ai_message);
-        delete_post_meta($post_id, '_fbpublish_ai_error');
-
-        return $ai_message;
     }
 
     private function normalize_text($text) {

@@ -119,20 +119,20 @@ class FB_Publish_Plugin {
 
         // OpenAI settings section
         add_settings_section('fbpublish_openai', __('Génération de message IA', 'fbpublishplugin'), function () {
-            echo '<p>' . esc_html__("Configurez OpenAI pour générer automatiquement un message d'accroche percutant.", 'fbpublishplugin') . '</p>';
+            echo '<p>' . esc_html__('Configurez OpenAI pour générer automatiquement un message d'accroche percutant.', 'fbpublishplugin') . '</p>';
         }, self::OPTION_KEY);
 
         add_settings_field('openai_api_key', __('Clé API OpenAI', 'fbpublishplugin'), function () {
             $options = self::get_options();
             echo '<input type="password" class="regular-text" name="' . esc_attr(self::OPTION_KEY) . '[openai_api_key]" value="' . esc_attr($options['openai_api_key']) . '" placeholder="sk-..." />';
-            echo '<p class="description">' . esc_html__("Clé API OpenAI pour générer les messages d'accroche. Obtenez-la sur platform.openai.com.", 'fbpublishplugin') . '</p>';
+            echo '<p class="description">' . esc_html__('Clé API OpenAI pour générer les messages d'accroche. Obtenez-la sur platform.openai.com.', 'fbpublishplugin') . '</p>';
         }, self::OPTION_KEY, 'fbpublish_openai');
 
-        add_settings_field('enable_ai_hook', __("Activer l'accroche IA", 'fbpublishplugin'), function () {
+        add_settings_field('enable_ai_hook', __('Activer l'accroche IA', 'fbpublishplugin'), function () {
             $options = self::get_options();
             $val = isset($options['enable_ai_hook']) ? $options['enable_ai_hook'] : '0';
-            echo '<label><input type="checkbox" name="' . esc_attr(self::OPTION_KEY) . '[enable_ai_hook]" value="1" ' . checked('1', $val, false) . ' /> ' . esc_html__("Générer automatiquement un message d'accroche via IA avant le lien.", 'fbpublishplugin') . '</label>';
-            echo '<p class="description">' . esc_html__("L'IA génère un message percutant basé sur le titre et l'extrait de l'article.", 'fbpublishplugin') . '</p>';
+            echo '<label><input type="checkbox" name="' . esc_attr(self::OPTION_KEY) . '[enable_ai_hook]" value="1" ' . checked('1', $val, false) . ' /> ' . esc_html__('Générer automatiquement un message d'accroche via IA avant le lien.', 'fbpublishplugin') . '</label>';
+            echo '<p class="description">' . esc_html__('L'IA génère un message percutant basé sur le titre et l'extrait de l'article.', 'fbpublishplugin') . '</p>';
         }, self::OPTION_KEY, 'fbpublish_openai');
     }
 

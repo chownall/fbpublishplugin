@@ -114,25 +114,25 @@ class FB_Publish_Plugin {
         add_settings_field('force_on_scheduled', __('Forcer si publication planifiée', 'fbpublishplugin'), function () {
             $options = self::get_options();
             $val = isset($options['force_on_scheduled']) ? $options['force_on_scheduled'] : '0';
-            echo '<label><input type="checkbox" name="' . esc_attr(self::OPTION_KEY) . '[force_on_scheduled]" value="1" ' . checked('1', $val, false) . ' /> ' . esc_html__("Ignorer la déduplication si l'article était déjà partagé avant sa mise en ligne planifiée.", 'fbpublishplugin') . '</label>';
+            echo '<label><input type="checkbox" name="' . esc_attr(self::OPTION_KEY) . '[force_on_scheduled]" value="1" ' . checked('1', $val, false) . ' /> ' . esc_html__('Ignorer la déduplication si l'article était déjà partagé avant sa mise en ligne planifiée.', 'fbpublishplugin') . '</label>';
         }, self::OPTION_KEY, 'fbpublish_main');
 
         // OpenAI settings section
         add_settings_section('fbpublish_openai', __('Génération de message IA', 'fbpublishplugin'), function () {
-            echo '<p>' . esc_html__("Configurez OpenAI pour générer automatiquement un message d'accroche percutant.", 'fbpublishplugin') . '</p>';
+            echo '<p>' . esc_html__('Configurez OpenAI pour générer automatiquement un message d'accroche percutant.', 'fbpublishplugin') . '</p>';
         }, self::OPTION_KEY);
 
         add_settings_field('openai_api_key', __('Clé API OpenAI', 'fbpublishplugin'), function () {
             $options = self::get_options();
             echo '<input type="password" class="regular-text" name="' . esc_attr(self::OPTION_KEY) . '[openai_api_key]" value="' . esc_attr($options['openai_api_key']) . '" placeholder="sk-..." />';
-            echo '<p class="description">' . esc_html__("Clé API OpenAI pour générer les messages d'accroche. Obtenez-la sur platform.openai.com.", 'fbpublishplugin') . '</p>';
+            echo '<p class="description">' . esc_html__('Clé API OpenAI pour générer les messages d'accroche. Obtenez-la sur platform.openai.com.', 'fbpublishplugin') . '</p>';
         }, self::OPTION_KEY, 'fbpublish_openai');
 
-        add_settings_field('enable_ai_hook', __("Activer l'accroche IA", 'fbpublishplugin'), function () {
+        add_settings_field('enable_ai_hook', __('Activer l'accroche IA', 'fbpublishplugin'), function () {
             $options = self::get_options();
             $val = isset($options['enable_ai_hook']) ? $options['enable_ai_hook'] : '0';
-            echo '<label><input type="checkbox" name="' . esc_attr(self::OPTION_KEY) . '[enable_ai_hook]" value="1" ' . checked('1', $val, false) . ' /> ' . esc_html__("Générer automatiquement un message d'accroche via IA avant le lien.", 'fbpublishplugin') . '</label>';
-            echo '<p class="description">' . esc_html__("L'IA génère un message percutant basé sur le titre et l'extrait de l'article.", 'fbpublishplugin') . '</p>';
+            echo '<label><input type="checkbox" name="' . esc_attr(self::OPTION_KEY) . '[enable_ai_hook]" value="1" ' . checked('1', $val, false) . ' /> ' . esc_html__('Générer automatiquement un message d'accroche via IA avant le lien.', 'fbpublishplugin') . '</label>';
+            echo '<p class="description">' . esc_html__('L'IA génère un message percutant basé sur le titre et l'extrait de l'article.', 'fbpublishplugin') . '</p>';
         }, self::OPTION_KEY, 'fbpublish_openai');
     }
 
@@ -227,21 +227,6 @@ class FB_Publish_Plugin {
             echo '<pre style="white-space:pre-wrap">' . esc_html($pretty) . '</pre>';
             echo '</details>';
         }
-
-        // AI hook diagnostics
-        $ai_hook = get_post_meta($post->ID, '_fbpublish_ai_hook', true);
-        $ai_error = get_post_meta($post->ID, '_fbpublish_ai_error', true);
-        if (!empty($ai_hook)) {
-            echo '<details style="margin-top:8px"><summary>' . esc_html__('Dernière accroche IA générée', 'fbpublishplugin') . '</summary>';
-            echo '<pre style="white-space:pre-wrap">' . esc_html($ai_hook) . '</pre>';
-            echo '</details>';
-        }
-        if (!empty($ai_error)) {
-            echo '<details style="margin-top:8px"><summary style="color:#d63638">' . esc_html__('Erreur IA', 'fbpublishplugin') . '</summary>';
-            echo '<pre style="white-space:pre-wrap;color:#d63638">' . esc_html($ai_error) . '</pre>';
-            echo '</details>';
-        }
-
         if ($last_shared_ts > 0) {
             echo '<p class="description">' . sprintf(
                 esc_html__('Dernier partage: %s', 'fbpublishplugin'),

@@ -21,10 +21,17 @@ Publie automatiquement le lien de l’article sur une Page Facebook quand un art
 - Pour poster sur une Page: `pages_manage_posts`, `pages_read_engagement` et un jeton de Page.
 
 == Notes ==
-- Utilise `wp_remote_post` vers l’API Graph v20.0 (`/{page_id}/feed`).
+- Utilise `wp_remote_post` vers l'API Graph v20.0 (`/{page_id}/feed`).
 - Déduplication simple via metas de post: évite la double publication.
- - Encodage: les apostrophes HTML (`&rsquo;`) sont normalisées en `'` avant envoi.
- - Planification: le partage auto est différé de ~60s après la mise en ligne planifiée afin de laisser le temps à Facebook de récupérer les métadonnées Open Graph (image, titre, description).
- - Option: vous pouvez forcer la republication par défaut pour les articles planifiés (ignorer la déduplication si l’article avait déjà été partagé).
+- Encodage: les apostrophes HTML (`&rsquo;`) sont normalisées en `'` avant envoi.
+- Planification: le partage auto est différé de ~20s après la mise en ligne planifiée afin de laisser le temps à Facebook de récupérer les métadonnées Open Graph (image, titre, description).
+- Option: vous pouvez forcer la republication par défaut pour les articles planifiés (ignorer la déduplication si l'article avait déjà été partagé).
+
+== Génération de message IA (OpenAI) ==
+- Configurez votre clé API OpenAI dans Réglages > Publication Facebook > Génération de message IA.
+- Cochez "Activer l'accroche IA" pour générer automatiquement un message d'accroche percutant basé sur le titre et l'extrait de l'article.
+- Le message généré est optimisé pour le copywriting Facebook (curiosité, appel à l'action, pas de spoiler).
+- Vous pouvez activer/désactiver l'accroche IA par article dans la méta box.
+- Les accroches générées sont affichées dans la méta box pour diagnostic.
 
 

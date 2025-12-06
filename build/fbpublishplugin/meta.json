@@ -2,8 +2,8 @@
   "name": "FB Publish Plugin",
   "slug": "fbpublishplugin",
   "version": " * Version: 1.0.1",
-  "buildDate": "2025-11-26T10:47:00Z",
+  "buildDate": "2025-12-06T09:14:51Z",
   "git": {
-    "sha": "e6b01aa"
+    "sha": "db230a8"
   }
 }
