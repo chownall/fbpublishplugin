@@ -161,11 +161,16 @@ class FB_Publish_Plugin {
     }
 
     public function register_meta_box() {
+        // Register meta box for all public post types (including CPTs)
+        $post_types = get_post_types(['public' => true], 'names');
+        if (empty($post_types)) {
+            $post_types = ['post']; // Fallback to post if no public types found
+        }
         add_meta_box(
             'fbpublish_meta',
             __('Publication Facebook', 'fbpublishplugin'),
             [$this, 'render_meta_box'],
-            ['post'],
+            $post_types,
             'side',
             'default'
         );
@@ -329,7 +334,9 @@ class FB_Publish_Plugin {
         if ($new_status !== 'publish' || $old_status === 'publish') {
             return;
         }
-        if ($post->post_type !== 'post') {
+        // Allow all public post types (including CPTs)
+        $public_post_types = get_post_types(['public' => true], 'names');
+        if (!in_array($post->post_type, $public_post_types, true)) {
             return;
         }
         $post_id = $post->ID;
@@ -371,7 +378,10 @@ class FB_Publish_Plugin {
     }
 
     public function auto_share_simple($post_id, $post) {
-        if (get_post_type($post_id) !== 'post') {
+        // Allow all public post types (including CPTs)
+        $post_type = get_post_type($post_id);
+        $public_post_types = get_post_types(['public' => true], 'names');
+        if (!in_array($post_type, $public_post_types, true)) {
             return;
         }
         // This is a fallback; main handler uses transition_post_status.
@@ -436,7 +446,7 @@ class FB_Publish_Plugin {
         }
         $excerpt = $this->normalize_text($excerpt);
 
-        $prompt = "Tu es un expert en copywriting Facebook, spécialisé dans le domaine des sports canins. 
+        $prompt = "Tu es un expert en copywriting Facebook.
 Génère un message Facebook court, percutant et très cliquable pour annoncer un nouvel article.
 
 Contraintes :

@@ -119,20 +119,20 @@ class FB_Publish_Plugin {
 
         // OpenAI settings section
         add_settings_section('fbpublish_openai', __('Génération de message IA', 'fbpublishplugin'), function () {
-            echo '<p>' . esc_html__('Configurez OpenAI pour générer automatiquement un message d'accroche percutant.', 'fbpublishplugin') . '</p>';
+            echo '<p>' . esc_html__("Configurez OpenAI pour générer automatiquement un message d'accroche percutant.", 'fbpublishplugin') . '</p>';
         }, self::OPTION_KEY);
 
         add_settings_field('openai_api_key', __('Clé API OpenAI', 'fbpublishplugin'), function () {
             $options = self::get_options();
             echo '<input type="password" class="regular-text" name="' . esc_attr(self::OPTION_KEY) . '[openai_api_key]" value="' . esc_attr($options['openai_api_key']) . '" placeholder="sk-..." />';
-            echo '<p class="description">' . esc_html__('Clé API OpenAI pour générer les messages d'accroche. Obtenez-la sur platform.openai.com.', 'fbpublishplugin') . '</p>';
+            echo '<p class="description">' . esc_html__("Clé API OpenAI pour générer les messages d'accroche. Obtenez-la sur platform.openai.com.", 'fbpublishplugin') . '</p>';
         }, self::OPTION_KEY, 'fbpublish_openai');
 
-        add_settings_field('enable_ai_hook', __('Activer l'accroche IA', 'fbpublishplugin'), function () {
+        add_settings_field('enable_ai_hook', __("Activer l'accroche IA", 'fbpublishplugin'), function () {
             $options = self::get_options();
             $val = isset($options['enable_ai_hook']) ? $options['enable_ai_hook'] : '0';
-            echo '<label><input type="checkbox" name="' . esc_attr(self::OPTION_KEY) . '[enable_ai_hook]" value="1" ' . checked('1', $val, false) . ' /> ' . esc_html__('Générer automatiquement un message d'accroche via IA avant le lien.', 'fbpublishplugin') . '</label>';
-            echo '<p class="description">' . esc_html__('L'IA génère un message percutant basé sur le titre et l'extrait de l'article.', 'fbpublishplugin') . '</p>';
+            echo '<label><input type="checkbox" name="' . esc_attr(self::OPTION_KEY) . '[enable_ai_hook]" value="1" ' . checked('1', $val, false) . ' /> ' . esc_html__("Générer automatiquement un message d'accroche via IA avant le lien.", 'fbpublishplugin') . '</label>';
+            echo '<p class="description">' . esc_html__("L'IA génère un message percutant basé sur le titre et l'extrait de l'article.", 'fbpublishplugin') . '</p>';
         }, self::OPTION_KEY, 'fbpublish_openai');
     }
 
@@ -161,11 +161,16 @@ class FB_Publish_Plugin {
     }
 
     public function register_meta_box() {
+        // Register meta box for all public post types (including CPTs)
+        $post_types = get_post_types(['public' => true], 'names');
+        if (empty($post_types)) {
+            $post_types = ['post']; // Fallback to post if no public types found
+        }
         add_meta_box(
             'fbpublish_meta',
             __('Publication Facebook', 'fbpublishplugin'),
             [$this, 'render_meta_box'],
-            ['post'],
+            $post_types,
             'side',
             'default'
         );
@@ -329,7 +334,9 @@ class FB_Publish_Plugin {
         if ($new_status !== 'publish' || $old_status === 'publish') {
             return;
         }
-        if ($post->post_type !== 'post') {
+        // Allow all public post types (including CPTs)
+        $public_post_types = get_post_types(['public' => true], 'names');
+        if (!in_array($post->post_type, $public_post_types, true)) {
             return;
         }
         $post_id = $post->ID;
@@ -371,7 +378,10 @@ class FB_Publish_Plugin {
     }
 
     public function auto_share_simple($post_id, $post) {
-        if (get_post_type($post_id) !== 'post') {
+        // Allow all public post types (including CPTs)
+        $post_type = get_post_type($post_id);
+        $public_post_types = get_post_types(['public' => true], 'names');
+        if (!in_array($post_type, $public_post_types, true)) {
             return;
         }
         // This is a fallback; main handler uses transition_post_status.
@@ -436,7 +446,7 @@ class FB_Publish_Plugin {
         }
         $excerpt = $this->normalize_text($excerpt);
 
-        $prompt = "Tu es un expert en copywriting Facebook, spécialisé dans le domaine des sports canins. 
+        $prompt = "Tu es un expert en copywriting Facebook.
 Génère un message Facebook court, percutant et très cliquable pour annoncer un nouvel article.
 
 Contraintes :
